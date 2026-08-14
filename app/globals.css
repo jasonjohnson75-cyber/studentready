@@ -40,4 +40,33 @@ button:focus-visible,select:focus-visible,a:focus-visible { outline:3px solid #f
 @media print { body * { visibility:hidden!important; }.worksheet-backdrop,.worksheet-backdrop * { visibility:visible!important; }.worksheet-backdrop { position:absolute; inset:0; padding:0; background:#fff; }.worksheet-modal { position:absolute; inset:0; width:100%; max-height:none; overflow:visible; box-shadow:none; padding:24px; }.no-print { display:none!important; }.worksheet-prompts>div>span { height:95px; }.adapt-note { margin-top:16px; } }
 .resource-search label>div>button { margin-right:7px; border:0; background:var(--mint); color:var(--forest); padding:6px 8px; font-size:.76rem; font-weight:850; cursor:pointer; }
 .resource-org small { font-size:.82rem; }.resource-copy p { font-size:.88rem; }.resource-actions a,.resource-actions button { font-size:.82rem; }.worksheet-grid article>div { font-size:.78rem; }.worksheet-grid p { font-size:.9rem; }.worksheet-grid button { font-size:.86rem; }
+@media (max-width:760px) {
+  html,body { width:100%; overflow-x:hidden; }
+  .app-shell,.workspace,.panel-wrap,.view-panel { width:100%; min-width:0; max-width:100%; }
+  .app-shell { overflow-x:hidden; }
+  .sidebar { padding:18px 16px 16px; }
+  .brand { margin-bottom:15px; justify-content:center; }
+  .brand small { max-width:190px; font-size:.78rem; }
+  .sidebar nav { display:grid; grid-template-columns:1fr 1fr; gap:7px; overflow:visible; }
+  .sidebar nav button { min-width:0; min-height:46px; padding:7px 8px; gap:7px; white-space:normal; font-size:.78rem; line-height:1.2; }
+  .sidebar nav button>span { width:21px; height:21px; flex:0 0 21px; }
+  .topbar { min-height:0; padding:14px 16px 16px; display:block; }
+  .topbar-title { display:none; }
+  .role-picker { width:100%; display:grid; grid-template-columns:1fr; gap:6px; }
+  .role-picker>span { font-size:.85rem; }
+  .role-picker select { width:100%; min-width:0; max-width:none; padding:12px 34px 12px 12px; }
+  .panel-wrap { padding:20px 16px 28px; }
+  .view-heading { gap:0; margin-bottom:18px; }
+  .view-heading h1,.view-heading.compact h1 { font-size:2.25rem; line-height:1.04; }
+  .view-heading>div>p:last-child { font-size:1rem; line-height:1.5; }
+  .urgent-link,.plain-button { width:100%; margin-top:15px; display:flex; justify-content:space-between; white-space:normal; text-align:left; }
+  .need-grid>button { width:100%; min-width:0; min-height:176px; padding:18px; }
+  .quick-row { padding:16px; }
+  .quick-row>div { align-items:flex-start; }
+  .quick-row button { width:100%; }
+  .situation-list { grid-template-columns:1fr; }
+  .activity-modal { width:100%; padding:25px 18px 20px; }
+  .modal-backdrop { padding:10px; }
+  .resource-search label,.resource-search input,.resource-search select { min-width:0; width:100%; }
+}
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
