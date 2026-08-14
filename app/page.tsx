@@ -1,0 +1,212 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+type View = "overview" | "situations" | "activities" | "behavior" | "cognitive" | "transition" | "resources" | "safety";
+
+const roles = [
+  "Teacher", "Administrator", "Social worker", "School counselor", "Therapist",
+  "Behavior interventionist", "Cognitive behavioral interventionist",
+];
+
+const roleFocus: Record<string, string> = {
+  Teacher: "Keep support practical, private, and connected to learning.",
+  Administrator: "Create consistent, equitable responses across the school.",
+  "Social worker": "Connect student needs, family context, and community support.",
+  "School counselor": "Build skills, belonging, and a clear path to added care.",
+  Therapist: "Bridge clinical recommendations with realistic school supports.",
+  "Behavior interventionist": "Understand the function of behavior, then teach a safer replacement skill.",
+  "Cognitive behavioral interventionist": "Connect thoughts, feelings, behavior, and next-step coping skills.",
+};
+
+const scenarios = [
+  { name: "Escalation or anger", signal: "Raised voice, pacing, clenched body, conflict, or threatening language.", first: "Lower your voice, reduce the audience, create physical space, and offer two acceptable choices.", activity: "90-second regulation reset", avoid: "Lecturing, matching intensity, demanding eye contact, or discussing consequences while the student is activated.", escalate: "Follow the school safety plan for threats, weapons, violence, or immediate danger." },
+  { name: "Anxiety or panic", signal: "Fast breathing, fear, racing thoughts, physical complaints, or avoiding a class or place.", first: "Reduce demands, use short sentences, offer a quieter location, and guide a grounding routine.", activity: "5-4-3-2-1 grounding", avoid: "Saying ‘calm down,’ debating the fear, crowding the student, or forcing a public explanation.", escalate: "Connect with qualified support when the student cannot regain safety, the pattern repeats, or daily functioning is affected." },
+  { name: "Shutdown or withdrawal", signal: "Silence, freezing, head down, avoiding interaction, or appearing disconnected.", first: "Stay nearby without pressure, allow processing time, and offer written or visual choices.", activity: "Low-demand check-in", avoid: "Assuming defiance, repeated questioning, public attention, or touch without permission.", escalate: "Request a private follow-up when the change is unusual, prolonged, tied to a disclosure, or paired with safety concerns." },
+  { name: "Conflict or bullying", signal: "Repeated targeting, exclusion, rumors, a power imbalance, or fear of attending school.", first: "Separate students, listen privately, protect against retaliation, and document observable facts.", activity: "Repair and restore", avoid: "Forced mediation when power is unequal, promising secrecy, or treating both students as equally responsible without facts.", escalate: "Notify the designated school leader and follow policy. Act immediately for threats, injury, discrimination, or suspected abuse." },
+  { name: "Grief or major change", signal: "Sadness, irritability, fatigue, concentration changes, withdrawal, or waves of emotion.", first: "Acknowledge the change, offer predictable routines and flexibility, and ask what support feels useful.", activity: "Circle of control", avoid: "Rushing a timeline, requiring public sharing, using clichés, or treating grief reactions as simple noncompliance.", escalate: "Connect with qualified support when distress is intense, persistent, or includes hopelessness or thoughts of self-harm." },
+  { name: "Avoidance or refusal", signal: "Missing work, leaving an area, repeated absences, delayed starts, or refusing a task.", first: "Identify what happens before the behavior, reduce the first step, preserve dignity, and offer a clear return path.", activity: "First-step plan", avoid: "Power struggles, removing every demand indefinitely, public correction, or assuming the student is unmotivated.", escalate: "Use a team-based functional assessment when avoidance is persistent, disruptive, or limiting access to learning." },
+];
+
+const activities = [
+  { title: "90-second regulation reset", goal: "Regulate", age: "All ages", time: "2 min", use: "Escalation, transition, frustration", steps: ["Move to a lower-stimulation space when possible.", "Invite the student to press both feet into the floor.", "Breathe out longer than breathing in, three times.", "Offer one clear next choice: pause, water, movement, or return."] },
+  { title: "5-4-3-2-1 grounding", goal: "Ground", age: "Grades 3–12", time: "5 min", use: "Anxiety, panic, overwhelm", steps: ["Name five things the student can see.", "Name four things they can feel.", "Name three things they can hear.", "Name two things they can smell and one thing they can taste."] },
+  { title: "Low-demand check-in", goal: "Connect", age: "All ages", time: "3 min", use: "Shutdown, withdrawal, fatigue", steps: ["Sit nearby at a respectful distance.", "Offer three options: talk, write, or take quiet time.", "Ask one question: ‘What would make the next ten minutes easier?’", "Set a specific time to reconnect."] },
+  { title: "Repair and restore", goal: "Repair", age: "Grades 4–12", time: "10 min", use: "Conflict after regulation", steps: ["Describe what happened without blame.", "Ask who was affected and how.", "Identify what each person needs now.", "Agree on one meaningful action to repair harm."] },
+  { title: "Circle of control", goal: "Reflect", age: "Grades 4–12", time: "7 min", use: "Worry, grief, uncertainty", steps: ["Draw two circles, control and cannot control.", "Sort current concerns into the circles.", "Choose one small action from the control circle.", "Identify one adult who can help with the rest."] },
+  { title: "First-step plan", goal: "Re-engage", age: "All ages", time: "4 min", use: "Avoidance, task refusal, low confidence", steps: ["Name the task without judgment.", "Reduce it to the smallest visible first step.", "Offer a choice of how or where to begin.", "Reinforce starting, then review the next step."] },
+];
+
+const resources = [
+  { org: "American Academy of Pediatrics", title: "Mental Health in Schools", topic: "Mental health", description: "Practical school and pediatric guidance for improving student mental health supports.", tags: "school health anxiety depression prevention referral", url: "https://www.aap.org/en/patient-care/school-health/mental-health-in-schools/", activity: "Low-demand check-in" },
+  { org: "HealthyChildren.org · AAP", title: "Healthy mental and emotional development", topic: "Development", description: "Age-aware guidance on safe relationships, emotional skills, problem-solving, and resilience.", tags: "development resilience relationships emotional wellness family", url: "https://www.healthychildren.org/English/healthy-living/emotional-wellness/Building-Resilience/Pages/healthy-mental-and-emotional-development-in-children-key-building-blocks.aspx", activity: "Circle of control" },
+  { org: "CASEL", title: "The CASEL 5", topic: "SEL", description: "A framework for self-awareness, self-management, social awareness, relationships, and decisions from childhood through adulthood.", tags: "sel competencies self awareness management relationships decisions", url: "https://casel.org/what-is-sel/", activity: "Repair and restore" },
+  { org: "CASEL", title: "SEL and workforce preparation", topic: "Transition", description: "Guidance connecting social-emotional competencies with career, workplace, and life readiness.", tags: "career workforce adulthood transition future readiness", url: "https://casel.org/fundamentals-of-sel/how-does-sel-support-your-priorities/sel-and-workforce-preparation/", activity: "First-step plan" },
+  { org: "Centers for Disease Control and Prevention", title: "School connectedness", topic: "School climate", description: "Research-based guidance for creating schools where students feel cared for, supported, and that they belong.", tags: "belonging connectedness climate trusted adult relationships", url: "https://www.cdc.gov/youth-behavior/school-connectedness/index.html", activity: "Repair and restore" },
+  { org: "Center on PBIS", title: "What is PBIS?", topic: "Behavior", description: "An evidence-based, tiered framework for behavioral, academic, social, emotional, and mental health support.", tags: "pbis mtss tier 1 tier 2 tier 3 behavior prevention", url: "https://www.pbis.org/pbis/what-is-pbis", activity: "First-step plan" },
+  { org: "Center on PBIS", title: "Tier 3 supports", topic: "Behavior", description: "Guidance for individualized, team-based supports, including functional assessment and behavior intervention plans.", tags: "fba bip function intensive individualized wraparound", url: "https://www.pbis.org/pbis/tier-3", activity: "90-second regulation reset" },
+  { org: "National Child Traumatic Stress Network", title: "CBITS", topic: "Cognitive", description: "Overview of Cognitive Behavioral Intervention for Trauma in Schools for trained clinical delivery with eligible students.", tags: "cbits cognitive behavioral trauma anxiety depression ptsd", url: "https://www.nctsn.org/interventions/cognitive-behavioral-intervention-trauma-schools", activity: "5-4-3-2-1 grounding" },
+  { org: "National Child Traumatic Stress Network", title: "SSET", topic: "Trauma", description: "A school support adaptation of CBITS designed for trained teachers and school counselors without clinical training.", tags: "sset trauma school support teacher counselor skills group", url: "https://www.nctsn.org/interventions/support-students-exposed-trauma-school-support-childhood-trauma", activity: "Circle of control" },
+  { org: "SAMHSA", title: "Trauma-informed approaches", topic: "Trauma", description: "Principles for safety, trust, collaboration, empowerment, and avoiding re-traumatization.", tags: "trauma informed safety trust peer support collaboration choice", url: "https://www.samhsa.gov/mental-health/trauma-violence/trauma-informed-approaches-programs", activity: "Low-demand check-in" },
+  { org: "AACAP", title: "Child and adolescent resource centers", topic: "Mental health", description: "Definitions, FAQs, expert information, and clinical resources on child and adolescent mental health topics.", tags: "psychiatry adhd anxiety depression behavior family referral", url: "https://www.aacap.org/AACAP/Families_and_Youth/Resource_Centers/Home.aspx", activity: "Low-demand check-in" },
+  { org: "988 Suicide & Crisis Lifeline", title: "Get help", topic: "Crisis", description: "Free, confidential crisis support by call, text, or chat, available 24 hours a day.", tags: "crisis suicide self harm emotional distress emergency", url: "https://988lifeline.org/", activity: "90-second regulation reset" },
+];
+
+const transitionStages = {
+  Elementary: { focus: "Name needs and practice everyday independence.", actions: ["Teach feeling and body-signal vocabulary.", "Use simple choices with natural consequences.", "Practice asking for help and trying again."], outcome: "A student who can identify a need, use a basic coping skill, and seek a trusted adult." },
+  "Middle school": { focus: "Build identity, flexible thinking, and responsible peer skills.", actions: ["Practice conflict repair and perspective-taking.", "Teach planning for stress, workload, and transitions.", "Increase student voice in support decisions."], outcome: "A student who can explain what helps, make a short plan, and repair a strained relationship." },
+  "High school": { focus: "Strengthen self-advocacy, decisions, and readiness beyond school.", actions: ["Connect choices to goals, values, and future options.", "Practice communicating needs to unfamiliar adults.", "Build routines for time, stress, money, work, and wellness."], outcome: "A student who can evaluate options, request reasonable support, and follow through on a plan." },
+  "Young adulthood": { focus: "Transfer skills to work, training, college, home, and community life.", actions: ["Shift from adult-directed plans to coaching and accountability.", "Practice navigating services and appointments.", "Build natural supports outside the school system."], outcome: "A young adult who can use support systems while taking increasing ownership of daily decisions." },
+};
+
+const worksheets = [
+  { title: "Regulation support plan", area: "Regulation", age: "All ages", summary: "Identify early signals, helpful conditions, adult responses, and safe return steps.", prompts: ["What observable signals show that stress is rising?", "What helps the environment feel safer or less demanding?", "Which regulation choices can the adult offer?", "How will the adult support a calm return to learning?"], activity: "90-second regulation reset" },
+  { title: "ABC behavior snapshot", area: "Behavior", age: "School teams", summary: "Capture what happened before, the observable behavior, and what changed afterward.", prompts: ["Before: What demand, transition, setting, or interaction occurred?", "Behavior: What was directly seen or heard?", "After: What changed immediately following the behavior?", "Working idea: What skill or need should the team explore?"], activity: "First-step plan" },
+  { title: "Thought · feeling · action map", area: "Cognitive", age: "Grades 4–12", summary: "Guide a student through the connection between a situation, thought, body feeling, action, and new response.", prompts: ["Situation: What happened?", "Thought: What went through the student’s mind?", "Feeling and body: What showed up?", "New response: What is one safer or more useful next choice?"], activity: "Circle of control" },
+  { title: "Return-to-learning plan", area: "Re-entry", age: "All ages", summary: "Create a small, predictable path back after distress, conflict, avoidance, or removal from class.", prompts: ["What does the student need before returning?", "What is the smallest reasonable first step?", "Which adult will reconnect and when?", "How will progress be reinforced without public attention?"], activity: "First-step plan" },
+  { title: "Repair conversation guide", area: "Relationships", age: "Grades 4–12", summary: "Structure a conversation about impact, needs, responsibility, and meaningful repair.", prompts: ["What happened, stated without blame?", "Who was affected and how?", "What does each person need now?", "What action can reasonably repair the harm?"], activity: "Repair and restore" },
+  { title: "Future-ready skill plan", area: "Transition", age: "Grades 6–12", summary: "Connect one current school support skill to independence, work, training, college, home, or community life.", prompts: ["Which life-ready skill is the focus?", "Where will the student use this skill outside school?", "What adult support can fade over time?", "What would student ownership look like next?"], activity: "First-step plan" },
+];
+
+export default function Home() {
+  const [view, setView] = useState<View>("overview");
+  const [role, setRole] = useState("Teacher");
+  const [scenario, setScenario] = useState(0);
+  const [activityFilter, setActivityFilter] = useState("All");
+  const [activeActivity, setActiveActivity] = useState<(typeof activities)[number] | null>(null);
+  const [transitionStage, setTransitionStage] = useState<keyof typeof transitionStages>("Elementary");
+  const [resourceQuery, setResourceQuery] = useState("");
+  const [resourceTopic, setResourceTopic] = useState("All");
+  const [resourceMode, setResourceMode] = useState("Guidance");
+  const [supportArea, setSupportArea] = useState("All");
+  const [activeWorksheet, setActiveWorksheet] = useState<(typeof worksheets)[number] | null>(null);
+  const filteredActivities = useMemo(() => activityFilter === "All" ? activities : activities.filter((item) => item.goal === activityFilter), [activityFilter]);
+  const filteredResources = useMemo(() => {
+    const query = resourceQuery.trim().toLowerCase();
+    return resources.filter((item) => {
+      const topicMatch = resourceTopic === "All" || item.topic === resourceTopic;
+      const textMatch = !query || `${item.org} ${item.title} ${item.topic} ${item.description} ${item.tags}`.toLowerCase().includes(query);
+      return topicMatch && textMatch;
+    });
+  }, [resourceQuery, resourceTopic]);
+  const resourceActivities = useMemo(() => {
+    const query = resourceQuery.trim().toLowerCase();
+    return activities.filter((item) => {
+      const areaMatch = supportArea === "All" || item.goal === supportArea;
+      const textMatch = !query || `${item.title} ${item.goal} ${item.age} ${item.use}`.toLowerCase().includes(query);
+      return areaMatch && textMatch;
+    });
+  }, [resourceQuery, supportArea]);
+  const resourceWorksheets = useMemo(() => {
+    const query = resourceQuery.trim().toLowerCase();
+    return worksheets.filter((item) => {
+      const areaMatch = supportArea === "All" || item.area === supportArea;
+      const textMatch = !query || `${item.title} ${item.area} ${item.age} ${item.summary} ${item.prompts.join(" ")}`.toLowerCase().includes(query);
+      return areaMatch && textMatch;
+    });
+  }, [resourceQuery, supportArea]);
+
+  const nav = [
+    { id: "overview" as View, label: "Support home", icon: "⌂" },
+    { id: "situations" as View, label: "Situation guide", icon: "!" },
+    { id: "activities" as View, label: "Activity library", icon: "◇" },
+    { id: "behavior" as View, label: "Behavior supports", icon: "B" },
+    { id: "cognitive" as View, label: "Cognitive supports", icon: "C" },
+    { id: "transition" as View, label: "Life readiness", icon: "↗" },
+    { id: "resources" as View, label: "Resource search", icon: "⌕" },
+    { id: "safety" as View, label: "Safety & privacy", icon: "＋" },
+  ];
+
+  function openRelatedActivity(title: string) {
+    const match = activities.find((item) => item.title === title);
+    if (match) setActiveActivity(match);
+  }
+
+  return (
+    <main className="app-shell">
+      <aside className="sidebar" aria-label="Application navigation">
+        <div className="brand"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><div><strong>StudentReady</strong><small>Practical guidance for supporting the whole student.</small></div></div>
+        <p className="adult-label">ADULT SUPPORT WORKSPACE</p>
+        <nav>{nav.map((item) => <button key={item.id} type="button" className={view === item.id ? "active" : ""} onClick={() => setView(item.id)}><span aria-hidden="true">{item.icon}</span>{item.label}</button>)}</nav>
+        <div className="privacy-chip"><span aria-hidden="true">✓</span><div><strong>No student data</strong><small>No names, profiles, or records</small></div></div>
+      </aside>
+
+      <section className="workspace">
+        <header className="topbar">
+          <div className="topbar-title"><span className="mobile-logo">StudentReady</span><p>Practical guidance for supporting the whole student.</p></div>
+          <label className="role-picker"><span>Your perspective</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((item) => <option key={item}>{item}</option>)}</select></label>
+        </header>
+
+        <div className="panel-wrap">
+          {view === "overview" && <section className="view-panel overview-view" aria-labelledby="overview-title">
+            <div className="view-heading"><div><p className="kicker">STUDENT-CENTERED SUPPORT</p><h1 id="overview-title">What does the student need right now?</h1><p>{roleFocus[role]}</p></div><button className="urgent-link" type="button" onClick={() => setView("safety")}>Urgent safety guidance <span>→</span></button></div>
+            <div className="need-grid">
+              <button type="button" onClick={() => { setScenario(0); setView("situations"); }}><span className="need-number">01</span><strong>Regulate now</strong><p>Reduce intensity and restore a sense of safety before reasoning.</p><span className="need-action">Open immediate supports →</span></button>
+              <button type="button" onClick={() => { setScenario(5); setView("situations"); }}><span className="need-number">02</span><strong>Understand behavior</strong><p>Look beyond the behavior to patterns, triggers, skills, and function.</p><span className="need-action">Open behavior guide →</span></button>
+              <button type="button" onClick={() => openRelatedActivity("Repair and restore")}><span className="need-number">03</span><strong>Repair & reconnect</strong><p>Restore dignity, relationships, responsibility, and school belonging.</p><span className="need-action">Use a repair activity →</span></button>
+              <button type="button" onClick={() => setView("activities")}><span className="need-number">04</span><strong>Build a life skill</strong><p>Practice regulation, decision-making, self-advocacy, and independence.</p><span className="need-action">Browse adult-guided activities →</span></button>
+            </div>
+            <div className="quick-row"><div><span className="quick-icon">?</span><div><strong>Not sure where to begin?</strong><p>Match what you observe to the closest situation. Support the need first, then teach the missing skill.</p></div></div><button type="button" onClick={() => setView("situations")}>Use the situation guide</button></div>
+            <div className="foundation-row"><article><strong>Connect</strong><span>Private, calm, nonjudgmental</span></article><i /><article><strong>Regulate</strong><span>Body and environment first</span></article><i /><article><strong>Understand</strong><span>Facts, patterns, and function</span></article><i /><article><strong>Teach</strong><span>A usable replacement skill</span></article><i /><article><strong>Follow up</strong><span>Reconnect and adjust support</span></article></div>
+          </section>}
+
+          {view === "situations" && <section className="view-panel" aria-labelledby="situations-title">
+            <div className="view-heading compact"><div><p className="kicker">OBSERVE · SUPPORT · ESCALATE WHEN NEEDED</p><h1 id="situations-title">Situation guide</h1><p>Choose the closest concern. These are response guides, not diagnoses.</p></div><button className="plain-button" type="button" onClick={() => setView("activities")}>Browse all activities →</button></div>
+            <div className="situation-layout"><div className="situation-list" role="tablist" aria-label="Common student situations">{scenarios.map((item,index) => <button key={item.name} type="button" role="tab" aria-selected={scenario === index} onClick={() => setScenario(index)}><span>{String(index + 1).padStart(2,"0")}</span>{item.name}</button>)}</div>
+              <article className="situation-detail"><div className="detail-top"><div><p className="kicker">WHAT YOU MAY NOTICE</p><h2>{scenarios[scenario].name}</h2></div><span className="scope-badge">School response</span></div><p className="signal">{scenarios[scenario].signal}</p><div className="response-grid"><div className="respond"><strong>Respond first</strong><p>{scenarios[scenario].first}</p></div><div className="avoid"><strong>Avoid</strong><p>{scenarios[scenario].avoid}</p></div></div><div className="escalate"><strong>Bring in more support</strong><p>{scenarios[scenario].escalate}</p></div><button className="activity-link" type="button" onClick={() => openRelatedActivity(scenarios[scenario].activity)}>Open related activity: {scenarios[scenario].activity} <span>→</span></button></article>
+            </div>
+          </section>}
+
+          {view === "activities" && <section className="view-panel" aria-labelledby="activities-title">
+            <div className="view-heading compact"><div><p className="kicker">ADULT-GUIDED, STUDENT-CENTERED</p><h1 id="activities-title">Support activity library</h1><p>Choose a practical activity, then adapt language and pacing to the student’s developmental level.</p></div></div>
+            <div className="filter-bar" aria-label="Activity filters">{["All","Regulate","Ground","Connect","Repair","Reflect","Re-engage"].map((item) => <button key={item} type="button" className={activityFilter === item ? "active" : ""} onClick={() => setActivityFilter(item)}>{item}</button>)}</div>
+            <div className="activity-grid">{filteredActivities.map((item,index) => <article key={item.title}><div className="activity-top"><span>{String(index + 1).padStart(2,"0")}</span><small>{item.time}</small></div><h2>{item.title}</h2><p>{item.use}</p><div className="activity-meta"><span>{item.goal}</span><span>{item.age}</span></div><button type="button" onClick={() => setActiveActivity(item)}>Open activity <span>→</span></button></article>)}</div>
+          </section>}
+
+          {view === "behavior" && <section className="view-panel" aria-labelledby="behavior-title">
+            <div className="view-heading compact"><div><p className="kicker">BEHAVIOR INTERVENTION LENS</p><h1 id="behavior-title">Behavior is information, not identity</h1><p>Describe what is observable, identify the likely need or function, and teach a replacement skill that works for the student.</p></div><button className="plain-button" type="button" onClick={() => { setScenario(5); setView("situations"); }}>Open refusal guide →</button></div>
+            <div className="abc-grid"><article><span>A</span><div><strong>Before</strong><p>What demand, setting, interaction, transition, sensory condition, or unmet need came before?</p></div></article><article><span>B</span><div><strong>Behavior</strong><p>What did the adult directly see or hear? Use specific actions, frequency, duration, and intensity.</p></div></article><article><span>C</span><div><strong>After</strong><p>What changed immediately afterward? Consider access, escape, attention, delay, or sensory relief.</p></div></article></div>
+            <div className="behavior-workspace"><article className="function-panel"><div className="subheading"><p className="kicker">ASK, DO NOT ASSUME</p><h2>What might the behavior accomplish?</h2></div><div className="function-grid"><div><strong>Escape or delay</strong><p>Reduce overload, clarify the first step, teach a break request, then support return.</p></div><div><strong>Connection or attention</strong><p>Schedule positive contact, teach a safe way to seek support, and reinforce it quickly.</p></div><div><strong>Access or control</strong><p>Offer meaningful choices, teach waiting and negotiation, and keep limits predictable.</p></div><div><strong>Sensory regulation</strong><p>Adjust the environment and teach acceptable movement, sound, pressure, or quiet options.</p></div></div></article>
+              <aside className="tier-panel"><p className="kicker">MATCH SUPPORT TO NEED</p><div><strong>Tier 1</strong><p>Predictable routines, explicitly taught expectations, relationships, and universal regulation tools.</p></div><div><strong>Tier 2</strong><p>Targeted skill groups, check-in/check-out, mentoring, and progress review.</p></div><div><strong>Tier 3</strong><p>Team-based functional assessment, individualized plans, wraparound support, and frequent review.</p></div></aside></div>
+            <div className="practice-strip"><strong>Behavior interventionist practice</strong><span>Prevent triggers</span><i /><span>Teach the replacement skill</span><i /><span>Reinforce success</span><i /><span>Review data without labels</span><button type="button" onClick={() => openRelatedActivity("First-step plan")}>Use First-step plan →</button></div>
+          </section>}
+
+          {view === "cognitive" && <section className="view-panel" aria-labelledby="cognitive-title">
+            <div className="view-heading compact"><div><p className="kicker">COGNITIVE BEHAVIORAL INTERVENTION LENS</p><h1 id="cognitive-title">Help students notice the pattern and choose a next step</h1><p>School adults can teach coping and problem-solving skills. Diagnosis and psychotherapy remain within qualified clinical scope.</p></div></div>
+            <div className="thought-chain"><article><span>01</span><strong>Situation</strong><p>What happened?</p></article><b>→</b><article><span>02</span><strong>Thought</strong><p>What did the student tell themselves?</p></article><b>→</b><article><span>03</span><strong>Feeling + body</strong><p>What emotion and body signal followed?</p></article><b>→</b><article><span>04</span><strong>Action</strong><p>What did the student do?</p></article><b>→</b><article className="new-choice"><span>05</span><strong>New response</strong><p>What is one safer, more useful option?</p></article></div>
+            <div className="cognitive-grid"><article><p className="kicker">ADULT PROMPTS</p><h2>Keep questions short and curious</h2><ul><li>“What went through your mind right then?”</li><li>“What did your body notice first?”</li><li>“Is there another possible explanation?”</li><li>“What choice moves you closer to your goal?”</li></ul></article><article><p className="kicker">TEACHABLE SKILLS</p><h2>Practice outside the crisis</h2><div className="skill-buttons"><button type="button" onClick={() => openRelatedActivity("Circle of control")}>Flexible thinking</button><button type="button" onClick={() => openRelatedActivity("5-4-3-2-1 grounding")}>Grounding</button><button type="button" onClick={() => openRelatedActivity("First-step plan")}>Problem-solving</button><button type="button" onClick={() => openRelatedActivity("Repair and restore")}>Perspective-taking</button></div></article></div>
+            <div className="clinical-scope"><div><strong>CBITS and SSET are defined programs</strong><p>CBITS is a clinical, trauma-focused group intervention. SSET is its school-support adaptation for trained teachers and counselors. Use only with appropriate training, screening, supervision, consent, and local procedures.</p></div><div><a href="https://www.nctsn.org/interventions/cognitive-behavioral-intervention-trauma-schools" target="_blank" rel="noreferrer">Review CBITS ↗</a><a href="https://www.nctsn.org/interventions/support-students-exposed-trauma-school-support-childhood-trauma" target="_blank" rel="noreferrer">Review SSET ↗</a></div></div>
+          </section>}
+
+          {view === "transition" && <section className="view-panel" aria-labelledby="transition-title">
+            <div className="view-heading compact"><div><p className="kicker">FROM CHILDHOOD TO ADULTHOOD</p><h1 id="transition-title">Build the skills students will use after school</h1><p>Move from adult-directed support toward student voice, self-advocacy, responsible decisions, and increasing independence.</p></div></div>
+            <div className="stage-tabs" role="tablist" aria-label="Developmental stages">{Object.keys(transitionStages).map((item) => <button key={item} type="button" role="tab" aria-selected={transitionStage === item} onClick={() => setTransitionStage(item as keyof typeof transitionStages)}>{item}</button>)}</div>
+            <div className="transition-focus"><div><p className="kicker">DEVELOPMENTAL FOCUS</p><h2>{transitionStages[transitionStage].focus}</h2><ul>{transitionStages[transitionStage].actions.map((item) => <li key={item}>{item}</li>)}</ul></div><aside><span>What progress can look like</span><p>{transitionStages[transitionStage].outcome}</p></aside></div>
+            <div className="readiness-grid"><article><span>01</span><strong>Self-awareness</strong><p>Recognize strengths, needs, emotions, stress signals, and values.</p></article><article><span>02</span><strong>Self-management</strong><p>Use routines, regulation tools, planning, persistence, and healthy coping.</p></article><article><span>03</span><strong>Relationships</strong><p>Communicate, set boundaries, repair harm, collaborate, and seek support.</p></article><article><span>04</span><strong>Decision-making</strong><p>Weigh options, consider impact, solve problems, and learn from outcomes.</p></article><article><span>05</span><strong>Self-advocacy</strong><p>Explain needs, ask questions, use services, and participate in plans.</p></article><article><span>06</span><strong>Life readiness</strong><p>Transfer skills to work, training, college, home, health, and community.</p></article></div>
+          </section>}
+
+          {view === "resources" && <section className="view-panel" aria-labelledby="resources-title">
+            <div className="view-heading compact"><div><p className="kicker">CURATED PROFESSIONAL SEARCH</p><h1 id="resources-title">Find guidance, then move to action</h1><p>Search trusted organizations by concern, framework, or support need. Every result connects back to an adult-guided activity.</p></div></div>
+            <div className="resource-search"><label><span>Search by student support need</span><div><span aria-hidden="true">⌕</span><input value={resourceQuery} onChange={(event) => setResourceQuery(event.target.value)} placeholder="Try: anxiety, behavior, trauma, adulthood, belonging..." />{resourceQuery && <button type="button" onClick={() => setResourceQuery("")} aria-label="Clear resource search">Clear</button>}</div><small>Do not enter a student name, identifier, or case details.</small></label><label><span>Retrieve</span><select value={resourceMode} onChange={(event) => { setResourceMode(event.target.value); setResourceTopic("All"); setSupportArea("All"); }}><option>Guidance</option><option>Activities</option><option>Worksheets</option></select></label>{resourceMode === "Guidance" ? <label><span>Topic</span><select value={resourceTopic} onChange={(event) => setResourceTopic(event.target.value)}>{["All","Mental health","Development","SEL","Transition","School climate","Behavior","Cognitive","Trauma","Crisis"].map((item) => <option key={item}>{item}</option>)}</select></label> : <label><span>Support area</span><select value={supportArea} onChange={(event) => setSupportArea(event.target.value)}>{["All",...(resourceMode === "Activities" ? ["Regulate","Ground","Connect","Repair","Reflect","Re-engage"] : ["Regulation","Behavior","Cognitive","Re-entry","Relationships","Transition"])].map((item) => <option key={item}>{item}</option>)}</select></label>}</div>
+
+            {resourceMode === "Guidance" && <><div className="results-head"><strong>{filteredResources.length} trusted {filteredResources.length === 1 ? "resource" : "resources"}</strong><span>Official and professional organizations only</span></div><div className="resource-results">{filteredResources.map((item) => <article key={`${item.org}-${item.title}`}><div className="resource-org"><span>{item.topic}</span><small>{item.org}</small></div><div className="resource-copy"><h2>{item.title}</h2><p>{item.description}</p></div><div className="resource-actions"><a href={item.url} target="_blank" rel="noreferrer">Visit source ↗</a><button type="button" onClick={() => openRelatedActivity(item.activity)}>Use: {item.activity} →</button></div></article>)}</div>{filteredResources.length === 0 && <div className="empty-results"><strong>No match yet</strong><p>Try a broader term such as behavior, anxiety, trauma, connectedness, or transition.</p></div>}</>}
+
+            {resourceMode === "Activities" && <><div className="results-head"><strong>{resourceActivities.length} matching {resourceActivities.length === 1 ? "activity" : "activities"}</strong><span>Adult-guided, adaptable, and student-centered</span></div><div className="activity-grid resource-tool-grid">{resourceActivities.map((item,index) => <article key={item.title}><div className="activity-top"><span>{String(index + 1).padStart(2,"0")}</span><small>{item.time}</small></div><h2>{item.title}</h2><p>{item.use}</p><div className="activity-meta"><span>{item.goal}</span><span>{item.age}</span></div><button type="button" onClick={() => setActiveActivity(item)}>Open activity <span>→</span></button></article>)}</div>{resourceActivities.length === 0 && <div className="empty-results"><strong>No activity match yet</strong><p>Try regulation, grounding, connection, repair, or re-entry.</p></div>}</>}
+
+            {resourceMode === "Worksheets" && <><div className="results-head"><strong>{resourceWorksheets.length} matching {resourceWorksheets.length === 1 ? "worksheet" : "worksheets"}</strong><span>Blank, printable, and no student name field</span></div><div className="worksheet-grid">{resourceWorksheets.map((item) => <article key={item.title}><div><span>{item.area}</span><small>{item.age}</small></div><h2>{item.title}</h2><p>{item.summary}</p><button type="button" onClick={() => setActiveWorksheet(item)}>Open worksheet <span>→</span></button></article>)}</div>{resourceWorksheets.length === 0 && <div className="empty-results"><strong>No worksheet match yet</strong><p>Try behavior, cognitive, regulation, relationships, re-entry, or transition.</p></div>}</>}
+          </section>}
+
+          {view === "safety" && <section className="view-panel" aria-labelledby="safety-title">
+            <div className="view-heading compact"><div><p className="kicker">SAFETY, SCOPE, AND PRIVACY</p><h1 id="safety-title">Act clearly when the concern is serious</h1><p>Follow school policy, state law, and the student’s existing safety plan when one is in place.</p></div></div>
+            <div className="safety-grid"><article className="danger-card"><span>IMMEDIATE DANGER</span><h2>Call 911</h2><p>Stay with the student or maintain direct supervision. Remove access to immediate dangers when it is safe to do so. Activate the school emergency plan.</p></article><article className="crisis-card"><span>CRISIS SUPPORT</span><h2>Call or text 988</h2><p>The 988 Suicide & Crisis Lifeline provides free, confidential support 24 hours a day. A student does not have to be suicidal to use it.</p><a href="tel:988">Call 988 now</a></article></div>
+            <div className="privacy-panel"><div><span className="privacy-icon">✓</span><div><h2>Privacy by design</h2><p>This hub does not request, display, or store student names, identifiers, case notes, behavior records, or education records.</p></div></div><ul><li>Do not enter student information into searches or notes.</li><li>Use school-approved systems for required documentation.</li><li>Share information only with people who have a legitimate need to support safety and education.</li><li>Follow FERPA, mandated-reporting requirements, and district policy.</li></ul><a href="https://studentprivacy.ed.gov/ferpa" target="_blank" rel="noreferrer">Review official FERPA guidance ↗</a></div>
+          </section>}
+        </div>
+      </section>
+
+      {activeActivity && <div className="modal-backdrop" onMouseDown={() => setActiveActivity(null)}><section className="activity-modal" role="dialog" aria-modal="true" aria-labelledby="activity-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" type="button" onClick={() => setActiveActivity(null)} aria-label="Close activity">×</button><p className="kicker">{activeActivity.goal.toUpperCase()} · {activeActivity.time.toUpperCase()}</p><h2 id="activity-title">{activeActivity.title}</h2><p className="modal-use"><strong>Use for:</strong> {activeActivity.use}</p><ol>{activeActivity.steps.map((step,index) => <li key={step}><span>{index + 1}</span><p>{step}</p></li>)}</ol><div className="adapt-note"><strong>Keep it student-centered</strong><p>Offer choice, protect privacy, avoid forcing participation, and stop if the activity increases distress.</p></div><button className="done-button" type="button" onClick={() => setActiveActivity(null)}>Close guide</button></section></div>}
+
+      {activeWorksheet && <div className="modal-backdrop worksheet-backdrop" onMouseDown={() => setActiveWorksheet(null)}><section className="activity-modal worksheet-modal" role="dialog" aria-modal="true" aria-labelledby="worksheet-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close no-print" type="button" onClick={() => setActiveWorksheet(null)} aria-label="Close worksheet">×</button><div className="worksheet-heading"><p className="kicker">THRIVE · BLANK SUPPORT WORKSHEET</p><span>No student name needed</span></div><h2 id="worksheet-title">{activeWorksheet.title}</h2><p className="modal-use">{activeWorksheet.summary}</p><div className="worksheet-prompts">{activeWorksheet.prompts.map((prompt,index) => <div key={prompt}><strong>{index + 1}. {prompt}</strong><span aria-hidden="true" /></div>)}</div><div className="adapt-note"><strong>Privacy reminder</strong><p>Do not add identifying student information. Use a school-approved secure system for any required education record or case documentation.</p></div><div className="worksheet-actions no-print"><button className="done-button" type="button" onClick={() => window.print()}>Print blank worksheet</button><button type="button" onClick={() => { setActiveWorksheet(null); openRelatedActivity(activeWorksheet.activity); }}>Open related activity</button></div></section></div>}
+    </main>
+  );
+}
