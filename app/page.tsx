@@ -19,6 +19,25 @@ const roleFocus: Record<string, string> = {
   "Cognitive behavioral interventionist": "Connect thoughts, feelings, behavior, and next-step coping skills.",
 };
 
+const roleGuidance: Record<string, { act: string; partner: string; boundary: string }> = {
+  Teacher: { act: "Stabilize the classroom moment, protect dignity, and provide a manageable path back to learning.", partner: "Share patterns with the counselor, intervention team, and family through approved school procedures.", boundary: "Do not diagnose, provide therapy, or investigate disclosures beyond what safety procedures require." },
+  Administrator: { act: "Coordinate a consistent response, protect safety and access to learning, and remove avoidable barriers.", partner: "Bring together staff, family, student-support personnel, and district resources when needs cross roles.", boundary: "Do not substitute discipline for assessment, support, disability procedures, or mandated reporting." },
+  "Social worker": { act: "Connect the student’s school experience with family, environmental, and community supports.", partner: "Coordinate with caregivers, school teams, and outside providers with appropriate consent and privacy safeguards.", boundary: "Use licensed scope and local policy for clinical assessment, records, consent, and information sharing." },
+  "School counselor": { act: "Provide brief skill support, check risk, strengthen belonging, and identify the next level of care.", partner: "Coordinate with teachers, caregivers, administrators, and qualified mental-health professionals.", boundary: "Do not deliver a specialized clinical intervention without required training, supervision, and consent." },
+  Therapist: { act: "Translate clinical goals into practical school supports the student can use during the day.", partner: "Collaborate with the student, caregiver, and school team using clear consent and minimum necessary information.", boundary: "Do not direct school operations or disclose clinical information beyond consent, law, and safety exceptions." },
+  "Behavior interventionist": { act: "Define observable behavior, study patterns and function, then teach and reinforce a replacement skill.", partner: "Work with the student, teacher, caregiver, and problem-solving team so the plan is consistent across settings.", boundary: "Do not infer motive from one event or use a behavior plan in place of a required evaluation or safety response." },
+  "Cognitive behavioral interventionist": { act: "Teach the connection among situations, thoughts, body signals, feelings, actions, and safer choices.", partner: "Coordinate practice with trained school or clinical staff and the adults who can reinforce the skill naturally.", boundary: "Do not present school coping activities as psychotherapy or deliver defined programs without required training." },
+};
+
+const developmentalLevels = {
+  Elementary: { label: "Elementary", prompt: "Use concrete language, one step at a time, visual choices, movement, and close adult co-regulation.", voice: "Offer two simple choices and practice the skill with the student." },
+  "Middle school": { label: "Middle school", prompt: "Protect privacy, expect strong peer influence, explain the purpose, and include the student in the plan.", voice: "Use brief collaborative questions and give the student meaningful control over how support happens." },
+  "High school": { label: "High school", prompt: "Connect support to goals, identity, credits, activities, work, and increasing independence.", voice: "Ask what support is useful, agree on a practical plan, and build self-advocacy." },
+  "Transition age": { label: "Transition age", prompt: "Coach decision-making, service navigation, workplace communication, and ownership across adult settings.", voice: "Shift from directing to coaching while keeping clear safety and accountability expectations." },
+};
+
+type DevelopmentalLevel = keyof typeof developmentalLevels;
+
 const scenarios = [
   { name: "Escalation or anger", signal: "Raised voice, pacing, clenched body, conflict, or threatening language.", first: "Lower your voice, reduce the audience, create physical space, and offer two acceptable choices.", activity: "90-second regulation reset", avoid: "Lecturing, matching intensity, demanding eye contact, or discussing consequences while the student is activated.", escalate: "Follow the school safety plan for threats, weapons, violence, or immediate danger." },
   { name: "Anxiety or panic", signal: "Fast breathing, fear, racing thoughts, physical complaints, or avoiding a class or place.", first: "Reduce demands, use short sentences, offer a quieter location, and guide a grounding routine.", activity: "5-4-3-2-1 grounding", avoid: "Saying ‘calm down,’ debating the fear, crowding the student, or forcing a public explanation.", escalate: "Connect with qualified support when the student cannot regain safety, the pattern repeats, or daily functioning is affected." },
@@ -60,17 +79,18 @@ const transitionStages = {
 };
 
 const worksheets = [
-  { title: "Regulation support plan", area: "Regulation", age: "All ages", summary: "Identify early signals, helpful conditions, adult responses, and safe return steps.", prompts: ["What observable signals show that stress is rising?", "What helps the environment feel safer or less demanding?", "Which regulation choices can the adult offer?", "How will the adult support a calm return to learning?"], activity: "90-second regulation reset" },
-  { title: "ABC behavior snapshot", area: "Behavior", age: "School teams", summary: "Capture what happened before, the observable behavior, and what changed afterward.", prompts: ["Before: What demand, transition, setting, or interaction occurred?", "Behavior: What was directly seen or heard?", "After: What changed immediately following the behavior?", "Working idea: What skill or need should the team explore?"], activity: "First-step plan" },
-  { title: "Thought · feeling · action map", area: "Cognitive", age: "Grades 4–12", summary: "Guide a student through the connection between a situation, thought, body feeling, action, and new response.", prompts: ["Situation: What happened?", "Thought: What went through the student’s mind?", "Feeling and body: What showed up?", "New response: What is one safer or more useful next choice?"], activity: "Circle of control" },
-  { title: "Return-to-learning plan", area: "Re-entry", age: "All ages", summary: "Create a small, predictable path back after distress, conflict, avoidance, or removal from class.", prompts: ["What does the student need before returning?", "What is the smallest reasonable first step?", "Which adult will reconnect and when?", "How will progress be reinforced without public attention?"], activity: "First-step plan" },
-  { title: "Repair conversation guide", area: "Relationships", age: "Grades 4–12", summary: "Structure a conversation about impact, needs, responsibility, and meaningful repair.", prompts: ["What happened, stated without blame?", "Who was affected and how?", "What does each person need now?", "What action can reasonably repair the harm?"], activity: "Repair and restore" },
-  { title: "Future-ready skill plan", area: "Transition", age: "Grades 6–12", summary: "Connect one current school support skill to independence, work, training, college, home, or community life.", prompts: ["Which life-ready skill is the focus?", "Where will the student use this skill outside school?", "What adult support can fade over time?", "What would student ownership look like next?"], activity: "First-step plan" },
+  { title: "Regulation support plan", area: "Regulation", age: "All ages", tags: "anxiety panic worry fear overwhelm escalation anger trauma grief shutdown sensory stress", summary: "Identify early signals, helpful conditions, adult responses, and safe return steps.", prompts: ["What observable signals show that stress is rising?", "What helps the environment feel safer or less demanding?", "Which regulation choices can the adult offer?", "How will the adult support a calm return to learning?"], activity: "90-second regulation reset" },
+  { title: "ABC behavior snapshot", area: "Behavior", age: "School teams", tags: "behavior refusal avoidance aggression disruption defiance elopement function trigger bullying", summary: "Capture what happened before, the observable behavior, and what changed afterward.", prompts: ["Before: What demand, transition, setting, or interaction occurred?", "Behavior: What was directly seen or heard?", "After: What changed immediately following the behavior?", "Working idea: What skill or need should the team explore?"], activity: "First-step plan" },
+  { title: "Thought · feeling · action map", area: "Cognitive", age: "Grades 4–12", tags: "anxiety panic worry fear trauma grief depression thinking cognitive coping self talk", summary: "Guide a student through the connection between a situation, thought, body feeling, action, and new response.", prompts: ["Situation: What happened?", "Thought: What went through the student’s mind?", "Feeling and body: What showed up?", "New response: What is one safer or more useful next choice?"], activity: "Circle of control" },
+  { title: "Return-to-learning plan", area: "Re-entry", age: "All ages", tags: "shutdown withdrawal refusal avoidance escalation suspension absence return transition reentry", summary: "Create a small, predictable path back after distress, conflict, avoidance, or removal from class.", prompts: ["What does the student need before returning?", "What is the smallest reasonable first step?", "Which adult will reconnect and when?", "How will progress be reinforced without public attention?"], activity: "First-step plan" },
+  { title: "Repair conversation guide", area: "Relationships", age: "Grades 4–12", tags: "bullying conflict harm relationship peer exclusion rumor repair restore accountability", summary: "Structure a conversation about impact, needs, responsibility, and meaningful repair.", prompts: ["What happened, stated without blame?", "Who was affected and how?", "What does each person need now?", "What action can reasonably repair the harm?"], activity: "Repair and restore" },
+  { title: "Future-ready skill plan", area: "Transition", age: "Grades 6–12", tags: "adulthood transition career college work independence self advocacy executive function future", summary: "Connect one current school support skill to independence, work, training, college, home, or community life.", prompts: ["Which life-ready skill is the focus?", "Where will the student use this skill outside school?", "What adult support can fade over time?", "What would student ownership look like next?"], activity: "First-step plan" },
 ];
 
 export default function Home() {
   const [view, setView] = useState<View>("overview");
   const [role, setRole] = useState("Teacher");
+  const [developmentalLevel, setDevelopmentalLevel] = useState<DevelopmentalLevel>("Elementary");
   const [scenario, setScenario] = useState(0);
   const [activityFilter, setActivityFilter] = useState("All");
   const [activeActivity, setActiveActivity] = useState<(typeof activities)[number] | null>(null);
@@ -101,7 +121,7 @@ export default function Home() {
     const query = resourceQuery.trim().toLowerCase();
     return worksheets.filter((item) => {
       const areaMatch = supportArea === "All" || item.area === supportArea;
-      const textMatch = !query || `${item.title} ${item.area} ${item.age} ${item.summary} ${item.prompts.join(" ")}`.toLowerCase().includes(query);
+      const textMatch = !query || `${item.title} ${item.area} ${item.age} ${item.tags} ${item.summary} ${item.prompts.join(" ")}`.toLowerCase().includes(query);
       return areaMatch && textMatch;
     });
   }, [resourceQuery, supportArea]);
@@ -134,12 +154,20 @@ export default function Home() {
       <section className="workspace">
         <header className="topbar">
           <div className="topbar-title"><span className="mobile-logo">StudentReady</span><p>Practical guidance for supporting the whole student.</p></div>
-          <label className="role-picker"><span>Your perspective</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <div className="support-pickers">
+            <label className="role-picker"><span>Your perspective</span><select value={role} onChange={(event) => setRole(event.target.value)}>{roles.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="role-picker level-picker"><span>Student level</span><select value={developmentalLevel} onChange={(event) => setDevelopmentalLevel(event.target.value as DevelopmentalLevel)}>{Object.keys(developmentalLevels).map((item) => <option key={item}>{item}</option>)}</select></label>
+          </div>
         </header>
 
         <div className="panel-wrap">
           {view === "overview" && <section className="view-panel overview-view" aria-labelledby="overview-title">
             <div className="view-heading"><div><p className="kicker">STUDENT-CENTERED SUPPORT</p><h1 id="overview-title">What does the student need right now?</h1><p>{roleFocus[role]}</p></div><button className="urgent-link" type="button" onClick={() => setView("safety")}>Urgent safety guidance <span>→</span></button></div>
+            <div className="guidance-lens" aria-label="Selected support guidance">
+              <article><span>{role}</span><strong>Your first responsibility</strong><p>{roleGuidance[role].act}</p></article>
+              <article><span>{developmentalLevels[developmentalLevel].label}</span><strong>Adapt the support</strong><p>{developmentalLevels[developmentalLevel].prompt}</p></article>
+              <article><span>Team response</span><strong>Coordinate and stay in scope</strong><p>{roleGuidance[role].partner} {roleGuidance[role].boundary}</p></article>
+            </div>
             <div className="need-grid">
               <button type="button" onClick={() => { setScenario(0); setView("situations"); }}><span className="need-number">01</span><strong>Regulate now</strong><p>Reduce intensity and restore a sense of safety before reasoning.</p><span className="need-action">Open immediate supports →</span></button>
               <button type="button" onClick={() => { setScenario(5); setView("situations"); }}><span className="need-number">02</span><strong>Understand behavior</strong><p>Look beyond the behavior to patterns, triggers, skills, and function.</p><span className="need-action">Open behavior guide →</span></button>
@@ -153,7 +181,7 @@ export default function Home() {
           {view === "situations" && <section className="view-panel" aria-labelledby="situations-title">
             <div className="view-heading compact"><div><p className="kicker">OBSERVE · SUPPORT · ESCALATE WHEN NEEDED</p><h1 id="situations-title">Situation guide</h1><p>Choose the closest concern. These are response guides, not diagnoses.</p></div><button className="plain-button" type="button" onClick={() => setView("activities")}>Browse all activities →</button></div>
             <div className="situation-layout"><div className="situation-list" role="tablist" aria-label="Common student situations">{scenarios.map((item,index) => <button key={item.name} type="button" role="tab" aria-selected={scenario === index} onClick={() => setScenario(index)}><span>{String(index + 1).padStart(2,"0")}</span>{item.name}</button>)}</div>
-              <article className="situation-detail"><div className="detail-top"><div><p className="kicker">WHAT YOU MAY NOTICE</p><h2>{scenarios[scenario].name}</h2></div><span className="scope-badge">School response</span></div><p className="signal">{scenarios[scenario].signal}</p><div className="response-grid"><div className="respond"><strong>Respond first</strong><p>{scenarios[scenario].first}</p></div><div className="avoid"><strong>Avoid</strong><p>{scenarios[scenario].avoid}</p></div></div><div className="escalate"><strong>Bring in more support</strong><p>{scenarios[scenario].escalate}</p></div><button className="activity-link" type="button" onClick={() => openRelatedActivity(scenarios[scenario].activity)}>Open related activity: {scenarios[scenario].activity} <span>→</span></button></article>
+              <article className="situation-detail"><div className="detail-top"><div><p className="kicker">WHAT YOU MAY NOTICE</p><h2>{scenarios[scenario].name}</h2></div><span className="scope-badge">{developmentalLevels[developmentalLevel].label}</span></div><p className="signal">{scenarios[scenario].signal}</p><div className="development-note"><strong>Developmental approach</strong><p>{developmentalLevels[developmentalLevel].voice}</p></div><div className="response-grid"><div className="respond"><strong>Respond first</strong><p>{scenarios[scenario].first}</p></div><div className="avoid"><strong>Avoid</strong><p>{scenarios[scenario].avoid}</p></div></div><div className="escalate"><strong>Bring in more support</strong><p>{scenarios[scenario].escalate}</p><small>{roleGuidance[role].partner}</small></div><button className="activity-link" type="button" onClick={() => openRelatedActivity(scenarios[scenario].activity)}>Open related activity: {scenarios[scenario].activity} <span>→</span></button></article>
             </div>
           </section>}
 
