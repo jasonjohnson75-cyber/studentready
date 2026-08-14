@@ -10,7 +10,9 @@
     "build": "vinext build",
     "deploy": "wrangler deploy",
     "preview": "wrangler dev",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "test:quality": "node scripts/quality-check.mjs",
+    "check:links": "node scripts/link-check.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
