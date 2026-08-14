@@ -161,6 +161,10 @@ export default function Home() {
         </header>
 
         <div className="panel-wrap">
+          <aside className="guide-disclaimer" aria-label="Guidance disclaimer">
+            <strong>Guidance only</strong>
+            <p>StudentReady is a general educational guide. It does not create rules, policies, laws, diagnoses, or professional standards. Always follow applicable law, district policy, school procedures, emergency protocols, and qualified professional guidance.</p>
+          </aside>
           {view === "overview" && <section className="view-panel overview-view" aria-labelledby="overview-title">
             <div className="view-heading"><div><p className="kicker">STUDENT-CENTERED SUPPORT</p><h1 id="overview-title">What does the student need right now?</h1><p>{roleFocus[role]}</p></div><button className="urgent-link" type="button" onClick={() => setView("safety")}>Urgent safety guidance <span>→</span></button></div>
             <div className="guidance-lens" aria-label="Selected support guidance">
