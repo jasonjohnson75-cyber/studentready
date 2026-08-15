@@ -22,12 +22,12 @@ if (!css.includes(":focus-visible") || !css.includes("prefers-reduced-motion")) 
   failures.push(["keyboard and reduced-motion styles", "required accessibility CSS"]);
 }
 
-const reviewedCount = (page.match(/reviewed: "Aug\. 14, 2026"/g) || []).length;
-if (reviewedCount !== 12) failures.push(["resource review metadata", `expected 12, found ${reviewedCount}`]);
+const reviewedCount = (page.match(/reviewed: "Aug\. (14|15), 2026"/g) || []).length;
+if (reviewedCount !== 13) failures.push(["resource review metadata", `expected 13, found ${reviewedCount}`]);
 
 const urls = [...page.matchAll(/url: "(https:\/\/[^\"]+)"/g)].map((match) => match[1]);
-if (urls.length !== 12 || new Set(urls).size !== urls.length) {
-  failures.push(["resource URLs", "expected 12 unique HTTPS resource URLs"]);
+if (urls.length !== 13 || new Set(urls).size !== urls.length) {
+  failures.push(["resource URLs", "expected 13 unique HTTPS resource URLs"]);
 }
 
 if (failures.length) {
