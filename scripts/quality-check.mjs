@@ -23,11 +23,11 @@ if (!css.includes(":focus-visible") || !css.includes("prefers-reduced-motion")) 
 }
 
 const reviewedCount = (page.match(/reviewed: "Aug\. 28, 2026"/g) || []).length;
-if (reviewedCount !== 13) failures.push(["resource review metadata", `expected 13, found ${reviewedCount}`]);
+if (reviewedCount !== 15) failures.push(["resource review metadata", `expected 15, found ${reviewedCount}`]);
 
 const urls = [...page.matchAll(/url: "(https:\/\/[^\"]+)"/g)].map((match) => match[1]);
-if (urls.length !== 13 || new Set(urls).size !== urls.length) {
-  failures.push(["resource URLs", "expected 13 unique HTTPS resource URLs"]);
+if (urls.length !== 15 || new Set(urls).size !== urls.length) {
+  failures.push(["resource URLs", "expected 15 unique HTTPS resource URLs"]);
 }
 
 if (failures.length) {
