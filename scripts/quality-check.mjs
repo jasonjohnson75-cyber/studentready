@@ -22,7 +22,7 @@ if (!css.includes(":focus-visible") || !css.includes("prefers-reduced-motion")) 
   failures.push(["keyboard and reduced-motion styles", "required accessibility CSS"]);
 }
 
-const reviewedCount = (page.match(/reviewed: "Aug\. (14|15), 2026"/g) || []).length;
+const reviewedCount = (page.match(/reviewed: "Aug\. 28, 2026"/g) || []).length;
 if (reviewedCount !== 13) failures.push(["resource review metadata", `expected 13, found ${reviewedCount}`]);
 
 const urls = [...page.matchAll(/url: "(https:\/\/[^\"]+)"/g)].map((match) => match[1]);
